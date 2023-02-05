@@ -1,7 +1,10 @@
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
 const refs = {
+  dataTime: document.querySelector('datetime-picker'),
+  startBtn: document.querySelector('button[data-start]'),
   days: document.querySelector('[data-days]'),
   hours: document.querySelector('[data-hours]'),
   minutes: document.querySelector('[data-minutes]'),
@@ -12,15 +15,23 @@ const timer = {
   intervalId: null,
 
   start(finalTime) {
+    this.reset();
     this.intervalId = setInterval(() => {
       const currentTime = Date.now();
       const deltaTime = finalTime - currentTime;
 
+      if (deltaTime <= 0) {
+        this.reset();
+        return;
+      }
+
       updateTimerFace(convertMs(deltaTime));
     }, 1000);
+
+    refs.startBtn.disabled = true;
   },
 
-  resetTimer() {
+  reset() {
     clearInterval(this.intervalId);
   },
 };
@@ -31,11 +42,23 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    timer.resetTimer();
-    console.log(selectedDates[0]);
-    timer.start(selectedDates[0]);
+    if (options.defaultDate > selectedDates[0]) {
+      Notify.failure('Please choose a date in the future');
+
+      refs.startBtn.disabled = true;
+      timer.reset();
+    } else {
+      timer.reset();
+      refs.startBtn.disabled = false;
+      refs.startBtn.addEventListener('click', () =>
+        timer.start(selectedDates[0])
+      );
+      console.log(selectedDates[0]);
+    }
   },
 };
+
+refs.startBtn.disabled = true;
 
 flatpickr('#datetime-picker', options);
 
